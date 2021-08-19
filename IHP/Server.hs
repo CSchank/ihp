@@ -18,6 +18,7 @@ import Database.PostgreSQL.Simple
 import qualified IHP.LoginSupport.Middleware
 import qualified IHP.Environment as Env
 import System.Info
+import System.Directory (makeAbsolute)
 import IHP.Log.Types
 import qualified IHP.Log as Log
 
@@ -90,6 +91,7 @@ withBackgroundWorkers frameworkConfig app = do
 initStaticMiddleware :: FrameworkConfig -> IO Middleware
 initStaticMiddleware FrameworkConfig { environment } = do
         libDirectory <- cs <$> findLibDirectory
+        libDirectory <- makeAbsolute libDirectory
 
         -- We have different caching rules for the app `static/` directory and the IHP `static/` directory
         appStaticCache <- initCaching (CustomCaching getAppCacheHeader)
@@ -97,8 +99,10 @@ initStaticMiddleware FrameworkConfig { environment } = do
         let appCachingOptions = defaultOptions { cacheContainer = appStaticCache }
         let ihpCachingOptions = defaultOptions { cacheContainer = ihpStaticCache }
 
+        staticDir <- makeAbsolute "static/"
+
         let middleware =
-                      staticPolicyWithOptions appCachingOptions (addBase "static/")
+                      staticPolicyWithOptions appCachingOptions (addBase staticDir)
                     . staticPolicyWithOptions ihpCachingOptions (addBase (libDirectory <> "static/"))
         pure middleware
     where

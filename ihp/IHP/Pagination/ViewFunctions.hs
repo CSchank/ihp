@@ -139,9 +139,9 @@ renderPagination pagination@Pagination {currentPage, window, pageSize} =
 renderFilter :: (?context::ControllerContext, ?request :: Request) =>
     Text    -- ^ Placeholder text for the text box
     -> Html
-renderFilter placeholder =
+renderFilter placeholder = --IHP.Pagination.ViewFunctions.renderFilter placeholder
     [hsx|
-        <form method="GET" action="" class="mt-2 float-end">
+        <form method="GET" action={formAction} class="mt-2 float-end">
             <div class="row">
                 <div class="col-auto">
                 <label class="visually-hidden" for="inlineFormInput">Name</label>
@@ -156,14 +156,18 @@ renderFilter placeholder =
         </form>
     |]
         where
-            boxValue = fromMaybe "" (paramOrNothing "filter") :: Text
+            path = Wai.rawPathInfo theRequest
+            formAction = path
+            boxValue :: Text
+            boxValue = case lookup "filter" (Wai.queryString theRequest) of
+                Just (Just v) -> cs v
+                _ -> ""
             clearFilterUrl = path <> Query.renderQuery True newQueryString
                 where
-                    path = theRequest.rawPathInfo
-                    queryString = theRequest.queryString
+                    queryString = Wai.queryString theRequest
                     newQueryString = queryString
                         |> removeQueryItem "filter"
-
+                        |> removeQueryItem "page"
 
 -- | Set or replace a query string item
 --
